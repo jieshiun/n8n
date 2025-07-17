@@ -1,0 +1,454 @@
+{
+  "name": "Gophish",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        0
+      ],
+      "id": "daba0963-e418-410b-a908-6f5ed180db3b",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=請幫我撰寫一封釣魚郵件，每次都使用不同的主題，提供 JSON 格式給我。",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "你是一位專業的資安測試工程師，正在設計一封用於社交工程演練的釣魚電子郵件。\n請根據以下條件生成逼真的釣魚信件內容：\n目標對象：一般企業內部員工(非技術背景)\n語氣風格：正式但具信任感\n誘因類型：  \n - 獎勵(如公司問卷抽獎、獎金申請)\n - 緊急處理(如帳戶異常、密碼過期)\n - 常見業務流程(如簽署文件、查看薪資單)\n偽裝角色：HR 人資、IT 支援、財務部門 或 高層主管\n - 要求行動：不要直接顯示網址，釣魚連結固定使用 href=\"{{.URL}}\"\n限制條件：\n - 不可使用真正惡意內容\n - 內容僅用於合法的紅隊或資安演練\n - 加入真實感細節(如公司 Logo、部門名稱、常見表述)\n - 信件語言：繁體中文，符合台灣商業用語\n\n請輸出完整的釣魚郵件內容(主旨 + 內文)，以電子郵件格式呈現，並明確標示出目標誘因與社交工程技巧。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        0
+      ],
+      "id": "2d83dd52-09b7-40dc-b44b-2655f5df730e",
+      "name": "Email AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        208
+      ],
+      "id": "867ec3ef-1c8c-4401-aba6-e08a00bb591e",
+      "name": "OpenAI Chat Model 4o",
+      "credentials": {
+        "openAiApi": {
+          "id": "aBhrK5UBJfnseMpq",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "1234",
+        "contextWindowLength": 5000
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        208
+      ],
+      "id": "32aa1c79-c65a-465b-8966-73a04e5fed6b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"name\" : \"Password Reset Template\",\n    \"subject\" : \"{{.FirstName}}, please reset your password.\",\n    \"text\" : \"Please reset your password here: {{.URL}}\",\n    \"html\" : \"<html><head></head><body>Please reset your password <a href\\\"{{.URL}}\\\">here</a></body></html>\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        208
+      ],
+      "id": "dc7ce046-a169-45f0-8659-cdb48d2d4fd1",
+      "name": "Email Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Schedule Trigger\"].json.base_url }}/api/templates/?api_key={{ $node[\"Schedule Trigger\"].json.api_key }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.output.toJsonString() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        0
+      ],
+      "id": "0ea775af-4997-44c0-83f0-dda608e8a865",
+      "name": "Create Email"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        208
+      ],
+      "id": "4811bba4-d690-46ec-9f0e-14c32fe462f1",
+      "name": "OpenAI Chat Model 4.1 mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "aBhrK5UBJfnseMpq",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n   \"name\": \"Example Page\",\n   \"html\": \"<html><head></head><body>This is a test page</body></html>\",\n   \"capture_credentials\": true,\n   \"capture_passwords\": true,\n   \"redirect_url\": \"http://example.com\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        896,
+        208
+      ],
+      "id": "477e39d3-bc9f-470d-b8eb-e20b5efd4d2b",
+      "name": "Page Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=請根據下面的郵件內容，幫我設計一個釣魚網站，提供 JSON 格式給我。\n郵件內容如下：\n{{ $node[\"Email AI Agent\"].json.output.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "你是一位專業的資安測試工程師，正在設計用於社交工程演練的釣魚網站。\n目標對象：一般企業內部員工(非技術背景)\n限制條件：\n - 不可使用真正惡意內容\n - 內容僅用於合法的紅隊或資安演練\n - 加入真實感細節(如公司 Logo、部門名稱、常見表述)\n - 介面語言：繁體中文，符合台灣商業用語"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        0
+      ],
+      "id": "d83419d0-b800-461b-b20f-959dc6f169fe",
+      "name": "Page AI Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Schedule Trigger\"].json.base_url }}/api/pages/?api_key={{ $node[\"Schedule Trigger\"].json.api_key }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.output.toJsonString() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "05d76ee8-a2de-4bc0-a4c1-a6523a976f96",
+      "name": "Create Page"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Schedule Trigger\"].json.base_url }}/api/campaigns/?api_key={{ $node[\"Schedule Trigger\"].json.api_key }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "= {\n    \"name\":\"{{ $now.format(\"yyyy-MM-dd\") }} - 社交工程演練\",\n    \"template\":{\"name\":\"{{ $node[\"Create Email\"].json.name }}\"},\n    \"url\":\"http://your_gophish_ip/\",\n    \"page\":{\"name\":\"{{ $node[\"Create Page\"].json.name }}\"},\n    \"smtp\":{\"name\":\"your_sending_profile_name\"},\n    \"groups\":[{\"name\":\"your_group_name\"}]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        0
+      ],
+      "id": "ead18ab4-90d3-4f0a-9aea-439467123e66",
+      "name": "Create Campaign"
+    },
+    {
+      "parameters": {
+        "content": "## 建立釣魚活動 \n[API Documentation](https://docs.getgophish.com/api-documentation/campaigns)",
+        "height": 544,
+        "width": 288,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1216,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "f03efebb-1397-4c4f-9236-10d5259ba879",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 建立釣魚網站\n[API Documentation](https://docs.getgophish.com/api-documentation/landing-pages)",
+        "height": 544,
+        "width": 528,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        656,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "dde79e23-f279-4c02-aa36-d06eeb0b701e",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## 建立釣魚郵件\n[API Documentation](https://docs.getgophish.com/api-documentation/templates)",
+        "height": 544,
+        "width": 672,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "902ea51b-8c31-4640-a181-e8b1ceac29ac",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 每月排程觸發\n請在此填寫 Gophish 的 URL 及 API Key",
+        "height": 544,
+        "width": 288,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -368,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "62ea1582-b1fe-4714-b487-29e9f0fe4a93",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "base_url": "http://your_gophish_ip:3333",
+          "api_key": "your_gophish_api_key"
+        }
+      }
+    ],
+    "Email AI Agent": [
+      {
+        "json": {
+          "output": {
+            "name": "釣魚郵件 - 獎金申請提醒",
+            "subject": "注意：您的年度績效獎金申請即將截止",
+            "text": "親愛的同仁您好：\n\n根據公司獎勵政策，今年度的績效獎金申請即將於本月底截止。我們鼓勵所有符合條件的員工於截止日前完成申請，以確保您能獲得應得的獎勵。\n\n請點擊以下連結進入獎金申請系統，完成您的獎金申請程序。如有任何問題，請聯絡財務部門。\n\n感謝您的配合與努力。\n\n祝好，\n財務部門",
+            "html": "<p>親愛的同仁您好：</p>\n<p>根據公司獎勵政策，今年度的績效獎金申請即將於本月底截止。我們鼓勵所有符合條件的員工於截止日前完成申請，以確保您能獲得應得的獎勵。</p>\n<p>請點擊以下連結進入獎金申請系統，完成您的獎金申請程序。如有任何問題，請聯絡財務部門。</p>\n<p>感謝您的配合與努力。</p>\n<p>祝好，<br>財務部門</p>\n<a href=\"{{.URL}}\">點擊這裡申請獎金</a>"
+          }
+        }
+      }
+    ],
+    "Create Email": [
+      {
+        "json": {
+          "id": 23,
+          "name": "釣魚郵件 - 獎金申請提醒",
+          "envelope_sender": "",
+          "subject": "注意：您的年度績效獎金申請即將截止",
+          "text": "親愛的同仁您好：\n\n根據公司獎勵政策，今年度的績效獎金申請即將於本月底截止。我們鼓勵所有符合條件的員工於截止日前完成申請，以確保您能獲得應得的獎勵。\n\n請點擊以下連結進入獎金申請系統，完成您的獎金申請程序。如有任何問題，請聯絡財務部門。\n\n感謝您的配合與努力。\n\n祝好，\n財務部門",
+          "html": "<p>親愛的同仁您好：</p>\n<p>根據公司獎勵政策，今年度的績效獎金申請即將於本月底截止。我們鼓勵所有符合條件的員工於截止日前完成申請，以確保您能獲得應得的獎勵。</p>\n<p>請點擊以下連結進入獎金申請系統，完成您的獎金申請程序。如有任何問題，請聯絡財務部門。</p>\n<p>感謝您的配合與努力。</p>\n<p>祝好，<br>財務部門</p>\n<a href=\"{{.URL}}\">點擊這裡申請獎金</a>",
+          "modified_date": "2025-07-17T03:39:11.320148697Z",
+          "attachments": null
+        }
+      }
+    ],
+    "Page AI Agent": [
+      {
+        "json": {
+          "output": {
+            "name": "2024公司績效獎金申請系統",
+            "html": "<!DOCTYPE html><html lang=\"zh-TW\"><head><meta charset=\"UTF-8\"><title>獎金申請系統 - 財務部門</title><style>body {font-family: \"Microsoft JhengHei\", sans-serif; background-color: #f8f9fa; margin: 0; padding: 0;} header {background-color: #004080; color: white; padding: 15px 20px; display: flex; align-items: center;} header img {height: 40px; margin-right: 10px;} main {max-width: 480px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);} h1 {color: #004080; margin-bottom: 20px; font-size: 1.6rem;} label {display: block; margin-top: 15px; font-weight: 600; color: #333;} input[type=text], input[type=password] {width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem;} button {margin-top: 25px; width: 100%; background-color: #004080; color: white; font-size: 1.1rem; padding: 12px; border: none; border-radius: 5px; cursor: pointer;} button:hover {background-color: #003366;} footer {text-align: center; font-size: 0.85rem; color: #777; margin-top: 30px;} .notice {margin-top: 20px; font-size: 0.9rem; color: #555;} </style></head><body><header><img src=\"https://example.com/company_logo.png\" alt=\"公司 Logo\"><div>2024年度績效獎金申請系統（財務部門）</div></header><main><h1>請登入以完成您的獎金申請</h1><form method=\"POST\" action=\"/submit_bonus_application\"><label for=\"emp_id\">員工編號</label><input type=\"text\" id=\"emp_id\" name=\"emp_id\" placeholder=\"請輸入您的員工編號\" required><label for=\"password\">系統密碼</label><input type=\"password\" id=\"password\" name=\"password\" placeholder=\"請輸入系統密碼\" required><button type=\"submit\">提交申請</button></form><div class=\"notice\">如有任何問題，請聯絡財務部門。</div></main><footer>© 2024 公司名稱 財務部門 版權所有</footer></body></html>",
+            "capture_credentials": true,
+            "capture_passwords": true,
+            "redirect_url": "https://company-internal-homepage.example.com"
+          }
+        }
+      }
+    ],
+    "Create Page": [
+      {
+        "json": {
+          "id": 690,
+          "name": "2024公司績效獎金申請系統",
+          "html": "<!DOCTYPE html><html lang=\"zh-TW\"><head><meta charset=\"UTF-8\"/><title>獎金申請系統 - 財務部門</title><style>body {font-family: \"Microsoft JhengHei\", sans-serif; background-color: #f8f9fa; margin: 0; padding: 0;} header {background-color: #004080; color: white; padding: 15px 20px; display: flex; align-items: center;} header img {height: 40px; margin-right: 10px;} main {max-width: 480px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);} h1 {color: #004080; margin-bottom: 20px; font-size: 1.6rem;} label {display: block; margin-top: 15px; font-weight: 600; color: #333;} input[type=text], input[type=password] {width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem;} button {margin-top: 25px; width: 100%; background-color: #004080; color: white; font-size: 1.1rem; padding: 12px; border: none; border-radius: 5px; cursor: pointer;} button:hover {background-color: #003366;} footer {text-align: center; font-size: 0.85rem; color: #777; margin-top: 30px;} .notice {margin-top: 20px; font-size: 0.9rem; color: #555;} </style></head><body><header><img src=\"https://example.com/company_logo.png\" alt=\"公司 Logo\"/><div>2024年度績效獎金申請系統（財務部門）</div></header><main><h1>請登入以完成您的獎金申請</h1><form method=\"POST\" action=\"\"><label for=\"emp_id\">員工編號</label><input type=\"text\" id=\"emp_id\" name=\"emp_id\" placeholder=\"請輸入您的員工編號\" required=\"\"/><label for=\"password\">系統密碼</label><input type=\"password\" id=\"password\" name=\"password\" placeholder=\"請輸入系統密碼\" required=\"\"/><button type=\"submit\">提交申請</button></form><div class=\"notice\">如有任何問題，請聯絡財務部門。</div></main><footer>© 2024 公司名稱 財務部門 版權所有</footer></body></html>",
+          "capture_credentials": true,
+          "capture_passwords": true,
+          "redirect_url": "https://company-internal-homepage.example.com",
+          "modified_date": "2025-07-17T04:20:28.459160511Z"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Email AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model 4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Email AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Email AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Email": {
+      "main": [
+        [
+          {
+            "node": "Page AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model 4.1 mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Page AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Page AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Page": {
+      "main": [
+        [
+          {
+            "node": "Create Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dee1a548-ce70-442f-9bdb-e49575a690a2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "48f18c21f29f4573ed1cb45c837ff8b7a556aa07ff2d7aab150f8f3827194213"
+  },
+  "id": "HHrgcxamTAFegwJZ",
+  "tags": []
+}
